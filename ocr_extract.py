@@ -11,7 +11,13 @@ strong fraud signal in real KYC systems.
 import re
 import difflib
 import cv2
+import os
 import pytesseract
+
+if os.name == "nt":
+    tesseract_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if os.path.exists(tesseract_path):
+        pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 
 def _preprocess(image_path: str):

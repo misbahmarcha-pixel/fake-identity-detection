@@ -47,7 +47,9 @@ CREATE TABLE IF NOT EXISTS auth_users (
     phone TEXT,
     username TEXT UNIQUE,
     password_hash TEXT,
-    created_at TEXT
+    created_at TEXT,
+    reset_token TEXT,
+    reset_token_expiry TEXT
 );
 """
 
@@ -88,9 +90,20 @@ def init_db(reset: bool = False):
                 (name, email, phone, username, ip, device, created, is_flagged, decision,
                  88.0 if is_flagged else 8.0, 90.0),
             )
+
+    # Add password-reset columns to existing databases
+    try:
+        cur.execute("ALTER TABLE auth_users ADD COLUMN reset_token TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cur.execute("ALTER TABLE auth_users ADD COLUMN reset_token_expiry TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
-
 
 def insert_user(name, email, phone, username, ip_address, device_id, created_at,
                  decision="Verified", final_risk_score=0.0, reasons="",
@@ -238,3 +251,51 @@ def get_auth_user_by_id(user_id):
     cols = [d[0] for d in cur.description]
     conn.close()
     return dict(zip(cols, row)) if row else None
+
+def get_auth_user_by_email(email):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM auth_users WHERE email = ?", (email,))
+    row = cur.fetchone()
+    cols = [d[0] for d in cur.description]
+    conn.close()
+    return dict(zip(cols, row)) if row else None
+
+
+def set_reset_token(email, token, expiry):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE auth_users "
+        "SET reset_token = ?, reset_token_expiry = ? "
+        "WHERE email = ?",
+        (token, expiry, email),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_user_by_reset_token(token):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM auth_users WHERE reset_token = ?",
+        (token,),
+    )
+    row = cur.fetchone()
+    cols = [d[0] for d in cur.description]
+    conn.close()
+    return dict(zip(cols, row)) if row else None
+
+
+def update_password(user_id, password_hash):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE auth_users "
+        "SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL "
+        "WHERE id = ?",
+        (password_hash, user_id),
+    )
+    conn.commit()
+    conn.close()

@@ -24,7 +24,9 @@ Routes:
 import os
 import random
 import datetime
+import secrets
 from functools import wraps
+from mail_utils import send_reset_email
 from flask import (
     Flask, request, render_template, redirect, url_for, session, jsonify, flash
 )
@@ -34,13 +36,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from database import (
     init_db, insert_user, get_all_users, get_user_by_id, get_history_by_email,
     get_decision_stats, log_activity, get_activity_log,
-    create_auth_user, get_auth_user_by_username, get_auth_user_by_id,
+    create_auth_user, get_auth_user_by_username, get_auth_user_by_id,get_auth_user_by_email,set_reset_token,get_user_by_reset_token,update_password,
 )
 from decision_engine import evaluate_registration
 from id_verification import generate_valid_aadhaar
 
 app = Flask(__name__)
-app.secret_key = "udp-project-demo-secret-key"  # fine for a student demo; not for real deployment
+app.secret_key = os.environ.get("SECRET_KEY", "udp-project-demo-secret-key") # fine for a student demo; not for real deployment
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -125,6 +127,93 @@ def login():
             return redirect(url_for("home"))
         error = "Incorrect username or password."
     return render_template("login.html", error=error)
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+
+        user = get_auth_user_by_email(email)
+
+        if user:
+            token = secrets.token_urlsafe(32)
+
+            expiry = (
+                datetime.datetime.now() + datetime.timedelta(hours=1)
+            ).isoformat()
+
+            set_reset_token(email, token, expiry)
+
+            link = url_for(
+                "reset_password",
+                token=token,
+                _external=True
+            )
+
+            send_reset_email(email, link)
+
+        flash(
+            "If that email exists, a reset link has been sent.",
+            "info"
+        )
+
+        return redirect(url_for("login"))
+
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    user = get_user_by_reset_token(token)
+
+    if not user:
+        return render_template(
+            "reset_password.html",
+            error="Invalid or expired reset link."
+        )
+
+    expiry = user.get("reset_token_expiry")
+
+    try:
+        expiry_time = datetime.datetime.fromisoformat(expiry)
+
+        if datetime.datetime.now() > expiry_time:
+            return render_template(
+                "reset_password.html",
+                error="This reset link has expired."
+            )
+
+    except (TypeError, ValueError):
+        return render_template(
+            "reset_password.html",
+            error="Invalid reset link."
+        )
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if len(password) < 6:
+            return render_template(
+                "reset_password.html",
+                error="Password must be at least 6 characters."
+            )
+
+        if password != confirm_password:
+            return render_template(
+                "reset_password.html",
+                error="Passwords do not match."
+            )
+
+        password_hash = generate_password_hash(password)
+
+        update_password(user["id"], password_hash)
+
+        flash("Password reset successfully. You can now log in.", "info")
+
+        return redirect(url_for("login"))
+
+    return render_template("reset_password.html")
 
 
 @app.route("/logout")
