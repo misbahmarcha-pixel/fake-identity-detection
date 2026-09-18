@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &mdash; VerifyGrid{% endblock %}
+{% block content %}
+<span class="eyebrow">Mentor / Admin View</span>
+<h1>Review Dashboard</h1>
+
+<div class="dashboard-grid">
+  <div class="card"><canvas id="decisionChart"></canvas></div>
+  <div class="card"><canvas id="riskChart"></canvas></div>
+</div>
+
+<form class="card" method="get" style="display:flex; gap:14px; align-items:end; flex-wrap:wrap;">
+  <div style="flex:1; min-width:180px;">
+    <label for="search">Search name / email / phone</label>
+    <input type="text" id="search" name="search" value="{{ search }}">
+  </div>
+  <div>
+    <label for="decision">Filter by decision</label>
+    <select id="decision" name="decision">
+      <option value="">All</option>
+      <option value="Verified" {% if decision_filter=="Verified" %}selected{% endif %}>Verified</option>
+      <option value="Flagged for Review" {% if decision_filter=="Flagged for Review" %}selected{% endif %}>Flagged for Review</option>
+      <option value="Rejected" {% if decision_filter=="Rejected" %}selected{% endif %}>Rejected</option>
+    </select>
+  </div>
+  <button class="submit" type="submit">Apply</button>
+</form>
+
+<div class="card" style="padding:0; overflow-x:auto;">
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Decision</th><th>Risk</th><th>Confidence</th><th>Registered</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      {% set slug = u[4].replace(' ', '-').lower() %}
+      <tr>
+        <td>{{ u[0] }}</td><td>{{ u[1] }}</td><td>{{ u[2] }}</td><td>{{ u[3] }}</td>
+        <td><span class="decision-badge decision-{{ slug }}">{{ u[4] }}</span></td>
+        <td class="score-cell">{{ u[5] }}</td>
+        <td class="score-cell">{{ u[8] }}%</td>
+        <td>{{ u[7] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 class="eyebrow" style="margin-top:32px;">Activity Log</h2>
+<div class="card">
+  <ul class="reasons-list">
+    {% for event, detail, ts in logs %}
+    <li><strong>{{ event }}</strong> &mdash; {{ detail }} <span class="hint">({{ ts }})</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+fetch("/api/stats").then(r => r.json()).then(stats => {
+  const byDecision = stats.by_decision || {};
+  new Chart(document.getElementById("decisionChart"), {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(byDecision),
+      datasets: [{ data: Object.values(byDecision), backgroundColor: ["#34d399", "#fbbf24", "#f87171"] }]
+    },
+    options: { plugins: { title: { display: true, text: "Decisions Breakdown", color: "#e6edf3" }, legend: { labels: { color: "#e6edf3" } } } }
+  });
+
+  const scores = stats.risk_scores || [];
+  const buckets = [0,0,0,0,0]; // 0-20,20-40,40-60,60-80,80-100
+  scores.forEach(s => { let idx = Math.min(4, Math.floor(s/20)); buckets[idx]++; });
+  new Chart(document.getElementById("riskChart"), {
+    type: "bar",
+    data: {
+      labels: ["0-20","20-40","40-60","60-80","80-100"],
+      datasets: [{ label: "Users", data: buckets, backgroundColor: "#5eead4" }]
+    },
+    options: { plugins: { title: { display: true, text: "Risk Score Distribution", color: "#e6edf3" }, legend: { display: false } },
+               scales: { x: { ticks: { color: "#8b949e" } }, y: { ticks: { color: "#8b949e" } } } }
+  });
+});
+</script>
+{% endblock %}

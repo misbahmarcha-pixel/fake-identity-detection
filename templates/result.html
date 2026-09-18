@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Result &mdash; VerifyGrid{% endblock %}
+{% block content %}
+{% set slug = user.decision.replace(' ', '-').lower() %}
+<div id="printable">
+  <span class="eyebrow">Verification Result</span>
+  <h1>{{ user.name }}</h1>
+  <p class="subtitle">Registered {{ user.account_created_at }}</p>
+
+  <div class="card">
+    <div class="result-top">
+      <div>
+        <span class="decision-badge decision-{{ slug }}">{{ user.decision.upper() }}</span>
+        <div class="confidence-line">AI Confidence: <strong>{{ user.ai_confidence }}%</strong></div>
+      </div>
+      <div id="qrcode" class="qr-box"></div>
+    </div>
+
+    <div class="risk-meter">
+      <div class="marker" style="left: {{ user.final_risk_score }}%;"></div>
+    </div>
+    <div class="meter-labels">
+      <span>0 &mdash; Verified</span><span>35</span><span>65</span><span>100 &mdash; Rejected</span>
+    </div>
+    <p class="score-line">Final risk score: <strong>{{ user.final_risk_score }}/100</strong></p>
+  </div>
+
+  <div class="card">
+    <span class="eyebrow">Why this decision</span>
+    <ul class="reasons-list">
+      {% for r in reasons %}
+      <li>{{ r }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="no-print" style="display:flex; gap:14px; align-items:center;">
+  <a href="{{ url_for('register') }}" class="link-accent">&larr; Run another verification</a>
+  <button class="submit secondary" onclick="window.print()">Download as PDF</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  new QRCode(document.getElementById("qrcode"), {
+    text: "{{ user.qr_payload }}",
+    width: 96, height: 96,
+    colorDark: "#0d1117", colorLight: "#ffffff"
+  });
+</script>
+{% endblock %}

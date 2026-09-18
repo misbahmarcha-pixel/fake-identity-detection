@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}My History &mdash; VerifyGrid{% endblock %}
+{% block content %}
+<span class="eyebrow">Verification History</span>
+<h1>My History</h1>
+<form class="card" method="get" style="display:flex; gap:14px; align-items:end;">
+  <div style="flex:1;">
+    <label for="email">Enter your email</label>
+    <input type="email" id="email" name="email" value="{{ email }}" required>
+  </div>
+  <button class="submit" type="submit">Look Up</button>
+</form>
+
+{% if email %}
+  {% if history %}
+    {% for h in history %}
+    {% set slug = h.decision.replace(' ', '-').lower() %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span class="decision-badge decision-{{ slug }}">{{ h.decision.upper() }}</span>
+          <span class="hint" style="margin-left:10px;">{{ h.account_created_at }}</span>
+        </div>
+        <a href="{{ url_for('show_result', user_id=h.id) }}" class="link-accent">View Full Result &rarr;</a>
+      </div>
+      <p class="score-line">Risk score: <strong>{{ h.final_risk_score }}/100</strong> &middot; Confidence: <strong>{{ h.ai_confidence }}%</strong></p>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="subtitle">No verification history found for this email.</p>
+  {% endif %}
+{% endif %}
+{% endblock %}

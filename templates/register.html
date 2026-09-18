@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Register &mdash; VerifyGrid{% endblock %}
+{% block content %}
+<span class="eyebrow">New Account Verification</span>
+<h1>Identity Registration</h1>
+
+<div class="stepper-track">
+  <div class="stepper-dot active" data-step="1">1<span>Info</span></div>
+  <div class="stepper-dot" data-step="2">2<span>Verify Email</span></div>
+  <div class="stepper-dot" data-step="3">3<span>Document</span></div>
+  <div class="stepper-dot" data-step="4">4<span>Selfie</span></div>
+  <div class="stepper-dot" data-step="5">5<span>Review</span></div>
+</div>
+
+<form class="card" id="wizard-form">
+
+  <!-- STEP 1: Personal Info -->
+  <div class="wizard-step" data-step="1">
+    <div class="account-banner">Verifying as <strong>{{ auth_name }}</strong> ({{ auth_email }})</div>
+    <div class="form-grid">
+      <div>
+        <label for="phone">Mobile Number</label>
+        <input type="tel" id="phone" name="phone" placeholder="9XXXXXXXXX" required>
+      </div>
+      <div>
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div>
+        <label for="dob">Date of Birth</label>
+        <input type="text" id="dob" name="dob" placeholder="DD-MM-YYYY">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="has_profile_picture" name="has_profile_picture">
+        <label for="has_profile_picture" style="margin:0;">I've uploaded a profile picture</label>
+      </div>
+      <div class="full">
+        <label for="bio">Short Bio</label>
+        <textarea id="bio" name="bio" placeholder="Tell us a little about yourself"></textarea>
+      </div>
+      <div>
+        <label for="ip_address">IP Address <span class="hint">(demo, editable)</span></label>
+        <input type="text" id="ip_address" name="ip_address" placeholder="e.g. 45.33.12.200">
+      </div>
+      <div>
+        <label for="device_id">Device ID <span class="hint">(demo)</span></label>
+        <input type="text" id="device_id" name="device_id" placeholder="e.g. DEV-A1F9">
+      </div>
+    </div>
+    <div class="wizard-nav"><span></span><button type="button" class="submit" onclick="nextStep(1)">Next &rarr;</button></div>
+  </div>
+
+  <!-- STEP 2: OTP -->
+  <div class="wizard-step hidden" data-step="2">
+    <p class="subtitle">We'll send a 6-digit code to verify your email. <strong>Demo mode:</strong> since no email server is configured for this project, the code is shown directly on screen instead of being emailed.</p>
+    <button type="button" class="submit secondary" id="send-otp-btn" onclick="sendOtp()">Send OTP</button>
+    <div id="otp-display" class="otp-display hidden"></div>
+    <div class="form-grid" style="margin-top:16px;">
+      <div>
+        <label for="otp-input">Enter OTP</label>
+        <input type="text" id="otp-input" maxlength="6" placeholder="6-digit code">
+      </div>
+    </div>
+    <p id="otp-status" class="hint"></p>
+    <div class="wizard-nav">
+      <button type="button" class="submit secondary" onclick="prevStep(2)">&larr; Back</button>
+      <button type="button" class="submit" id="otp-next-btn" onclick="verifyOtp()" disabled>Verify &amp; Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Document -->
+  <div class="wizard-step hidden" data-step="3">
+    <div class="form-grid">
+      <div>
+        <label for="doc_type">ID Document Type</label>
+        <select id="doc_type" name="doc_type">
+          <option value="aadhaar">Aadhaar Card</option>
+          <option value="pan">PAN Card</option>
+          <option value="passport">Passport</option>
+          <option value="driving_license">Driving License</option>
+        </select>
+      </div>
+      <div class="full">
+        <label for="id_number">ID Number</label>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="id_number" name="id_number" required style="flex:1;">
+          <button type="button" class="submit secondary" onclick="fillSampleId()">Fill Sample ID</button>
+        </div>
+        <p class="hint">Real Aadhaar numbers use a checksum digit, so a random 12-digit number will always fail format validation. Use "Fill Sample ID" to generate a valid test number.</p>
+      </div>
+      <div class="full">
+        <label for="document">Upload ID Document (image)</label>
+        <input type="file" id="document" name="document" accept="image/*" required onchange="previewImage(this,'doc-preview')">
+        <img id="doc-preview" class="doc-preview hidden">
+      </div>
+    </div>
+    <div class="wizard-nav">
+      <button type="button" class="submit secondary" onclick="prevStep(3)">&larr; Back</button>
+      <button type="button" class="submit" onclick="nextStep(3)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Selfie -->
+  <div class="wizard-step hidden" data-step="4">
+    <p class="subtitle">Capture a live selfie using your webcam. We check that a real face is visible.</p>
+    <div class="camera-box">
+      <video id="camera-video" autoplay playsinline class="hidden"></video>
+      <canvas id="camera-canvas" class="hidden"></canvas>
+      <img id="selfie-preview" class="doc-preview hidden">
+    </div>
+    <div class="wizard-nav" style="justify-content:flex-start; gap:12px;">
+      <button type="button" class="submit secondary" onclick="startCamera()">Start Camera</button>
+      <button type="button" class="submit secondary" onclick="captureSelfie()">Capture</button>
+      <button type="button" class="submit secondary" onclick="retakeSelfie()">Retake</button>
+    </div>
+    <p class="hint">Camera not working? You can skip this step, but the selfie liveness check will count as unverified.</p>
+    <div class="wizard-nav">
+      <button type="button" class="submit secondary" onclick="prevStep(4)">&larr; Back</button>
+      <button type="button" class="submit" onclick="nextStep(4)">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: Review -->
+  <div class="wizard-step hidden" data-step="5">
+    <p class="subtitle">Review your details, then submit for verification.</p>
+    <div id="review-summary" class="review-summary"></div>
+    <div class="wizard-nav">
+      <button type="button" class="submit secondary" onclick="prevStep(5)">&larr; Back</button>
+      <button type="button" class="submit" onclick="submitAll()">Run Verification &rarr;</button>
+    </div>
+  </div>
+
+</form>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loading-text">Scanning document...</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentStep = 1;
+let otpVerified = false;
+let selfieBlob = null;
+let stream = null;
+
+function showStep(n) {
+  document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("hidden"));
+  document.querySelector(`.wizard-step[data-step="${n}"]`).classList.remove("hidden");
+  document.querySelectorAll(".stepper-dot").forEach(d => {
+    d.classList.toggle("active", parseInt(d.dataset.step) <= n);
+  });
+  currentStep = n;
+}
+
+function nextStep(from) {
+  if (from === 1) {
+    const required = ["phone","username"];
+    for (const id of required) {
+      if (!document.getElementById(id).value.trim()) { alert("Please fill in all required fields."); return; }
+    }
+  }
+  if (from === 3) {
+    if (!document.getElementById("id_number").value.trim() || !document.getElementById("document").files.length) {
+      alert("Please provide ID number and upload the document."); return;
+    }
+  }
+  if (from === 4) buildReview();
+  showStep(from + 1);
+}
+function prevStep(from) { showStep(from - 1); }
+
+function fillSampleId() {
+  fetch("/generate-sample-id")
+    .then(r => r.json())
+    .then(data => { document.getElementById("id_number").value = data.id_number; });
+}
+
+function sendOtp() {
+  const email = "{{ auth_email }}";
+  fetch("/send-otp", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email})})
+    .then(r => r.json())
+    .then(data => {
+      const box = document.getElementById("otp-display");
+      box.classList.remove("hidden");
+      box.innerHTML = `<strong>Demo OTP</strong> (would normally be emailed): <span class="otp-code">${data.demo_otp}</span>`;
+    });
+}
+
+function verifyOtp() {
+  const otp = document.getElementById("otp-input").value.trim();
+  fetch("/verify-otp", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({otp})})
+    .then(r => r.json())
+    .then(data => {
+      const status = document.getElementById("otp-status");
+      if (data.valid) {
+        otpVerified = true;
+        status.textContent = "Email verified.";
+        status.style.color = "var(--verified)";
+        nextStep(2);
+      } else {
+        status.textContent = "Incorrect OTP, try again.";
+        status.style.color = "var(--rejected)";
+      }
+    });
+}
+document.addEventListener("input", (e) => {
+  if (e.target.id === "otp-input") {
+    document.getElementById("otp-next-btn").disabled = e.target.value.trim().length !== 6;
+  }
+});
+
+function previewImage(input, targetId) {
+  const img = document.getElementById(targetId);
+  if (input.files && input.files[0]) {
+    img.src = URL.createObjectURL(input.files[0]);
+    img.classList.remove("hidden");
+  }
+}
+
+function startCamera() {
+  const video = document.getElementById("camera-video");
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(s => {
+      stream = s;
+      video.srcObject = s;
+      video.classList.remove("hidden");
+      document.getElementById("selfie-preview").classList.add("hidden");
+    })
+    .catch(() => alert("Could not access camera. You can skip this step."));
+}
+
+function captureSelfie() {
+  const video = document.getElementById("camera-video");
+  const canvas = document.getElementById("camera-canvas");
+  if (!video.srcObject) { alert("Start the camera first."); return; }
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    selfieBlob = blob;
+    const img = document.getElementById("selfie-preview");
+    img.src = URL.createObjectURL(blob);
+    img.classList.remove("hidden");
+  }, "image/jpeg");
+  video.classList.add("hidden");
+  if (stream) stream.getTracks().forEach(t => t.stop());
+}
+
+function retakeSelfie() {
+  selfieBlob = null;
+  document.getElementById("selfie-preview").classList.add("hidden");
+  startCamera();
+}
+
+function buildReview() {
+  const f = id => document.getElementById(id).value;
+  const summary = document.getElementById("review-summary");
+  summary.innerHTML = `
+    <div class="review-row"><span>Account</span><strong>{{ auth_name }} ({{ auth_email }})</strong></div>
+    <div class="review-row"><span>Phone</span><strong>${f("phone")}</strong></div>
+    <div class="review-row"><span>Username</span><strong>${f("username")}</strong></div>
+    <div class="review-row"><span>Document Type</span><strong>${f("doc_type")}</strong></div>
+    <div class="review-row"><span>ID Number</span><strong>${f("id_number")}</strong></div>
+    <div class="review-row"><span>Selfie Captured</span><strong>${selfieBlob ? "Yes" : "No (skipped)"}</strong></div>
+    <div class="review-row"><span>Email Verified (OTP)</span><strong>${otpVerified ? "Yes" : "No"}</strong></div>
+  `;
+}
+
+function submitAll() {
+  const overlay = document.getElementById("loading-overlay");
+  const loadingText = document.getElementById("loading-text");
+  overlay.classList.remove("hidden");
+  const messages = ["Scanning document...", "Reading ID with OCR...", "Analyzing online identity...", "Running ML fraud model...", "Checking selfie liveness...", "Finalizing decision..."];
+  let i = 0;
+  const interval = setInterval(() => { loadingText.textContent = messages[i % messages.length]; i++; }, 900);
+
+  const formEl = document.getElementById("wizard-form");
+  const fd = new FormData(formEl);
+  if (selfieBlob) fd.append("selfie", selfieBlob, "selfie.jpg");
+
+  fetch("/submit-registration", { method: "POST", body: fd })
+    .then(r => r.json())
+    .then(data => { clearInterval(interval); window.location.href = data.redirect; })
+    .catch(() => { clearInterval(interval); overlay.classList.add("hidden"); alert("Something went wrong. Please try again."); });
+}
+</script>
+{% endblock %}

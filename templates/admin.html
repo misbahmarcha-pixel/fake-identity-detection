@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Review Queue &mdash; VerifyGrid{% endblock %}
+{% block content %}
+<span class="eyebrow">Mentor / Admin View</span>
+<h1>Review Queue</h1>
+<p class="subtitle">All registered accounts and their verification outcome.</p>
+
+<div class="card" style="padding: 0; overflow-x: auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Phone</th>
+        <th>Decision</th><th>Risk Score</th><th>Registered</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      {% set slug = u[4].replace(' ', '-').lower() %}
+      <tr>
+        <td>{{ u[0] }}</td>
+        <td>{{ u[1] }}</td>
+        <td>{{ u[2] }}</td>
+        <td>{{ u[3] }}</td>
+        <td><span class="decision-badge decision-{{ slug }}">{{ u[4] }}</span></td>
+        <td class="score-cell">{{ u[5] }}</td>
+        <td>{{ u[7] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

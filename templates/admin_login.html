@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Admin Login &mdash; VerifyGrid{% endblock %}
+{% block content %}
+<span class="eyebrow">Restricted Access</span>
+<h1>Admin Login</h1>
+<form class="card" style="max-width:380px;" method="post">
+  {% if error %}<p style="color:var(--rejected);">{{ error }}</p>{% endif %}
+  <label for="password">Password</label>
+  <input type="password" id="password" name="password" required>
+  <button class="submit" type="submit" style="margin-top:16px;">Login</button>
+  <p class="hint" style="margin-top:12px;">Demo password: <code>admin123</code></p>
+</form>
+{% endblock %}

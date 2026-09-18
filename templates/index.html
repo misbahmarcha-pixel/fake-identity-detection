@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Register &mdash; VerifyGrid{% endblock %}
+{% block content %}
+<span class="eyebrow">New Account Verification</span>
+<h1>Identity Registration</h1>
+<p class="subtitle">Fill in your details and upload a government ID. We'll cross-check the document, scan your account signals, and score fraud risk before verifying you.</p>
+
+<form class="card" action="{{ url_for('register') }}" method="post" enctype="multipart/form-data">
+  <div class="form-grid">
+    <div class="full">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+    <div>
+      <label for="email">Email Address</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    <div>
+      <label for="phone">Mobile Number</label>
+      <input type="tel" id="phone" name="phone" placeholder="9XXXXXXXXX" required>
+    </div>
+    <div>
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required>
+    </div>
+    <div>
+      <label for="dob">Date of Birth</label>
+      <input type="text" id="dob" name="dob" placeholder="DD-MM-YYYY">
+    </div>
+    <div class="full">
+      <label for="bio">Short Bio</label>
+      <textarea id="bio" name="bio" placeholder="Tell us a little about yourself"></textarea>
+    </div>
+    <div class="checkbox-row full">
+      <input type="checkbox" id="has_profile_picture" name="has_profile_picture">
+      <label for="has_profile_picture" style="margin:0;">I've uploaded a profile picture</label>
+    </div>
+
+    <div>
+      <label for="doc_type">ID Document Type</label>
+      <select id="doc_type" name="doc_type">
+        <option value="aadhaar">Aadhaar Card</option>
+        <option value="pan">PAN Card</option>
+        <option value="passport">Passport</option>
+        <option value="driving_license">Driving License</option>
+      </select>
+    </div>
+    <div>
+      <label for="id_number">ID Number</label>
+      <input type="text" id="id_number" name="id_number" required>
+    </div>
+    <div class="full">
+      <label for="document">Upload ID Document (image)</label>
+      <input type="file" id="document" name="document" accept="image/*" required>
+    </div>
+
+    <div>
+      <label for="ip_address">IP Address <span style="opacity:.6">(auto-filled, editable for demo)</span></label>
+      <input type="text" id="ip_address" name="ip_address" placeholder="e.g. 45.33.12.200">
+    </div>
+    <div>
+      <label for="device_id">Device ID <span style="opacity:.6">(demo only)</span></label>
+      <input type="text" id="device_id" name="device_id" placeholder="e.g. DEV-A1F9">
+    </div>
+  </div>
+
+  <button class="submit" type="submit">Run Verification</button>
+</form>
+{% endblock %}

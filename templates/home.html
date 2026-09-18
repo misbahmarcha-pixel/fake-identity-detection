@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}VerifyGrid &mdash; Fake Identity Detection{% endblock %}
+{% block content %}
+<div class="hero">
+  <span class="eyebrow">Fraud Prevention Platform</span>
+  <h1 class="hero-title">Verify identities before fraud gets in.</h1>
+  <p class="hero-sub">
+    VerifyGrid checks government ID documents, scans for fake email/username patterns,
+    detects duplicate accounts, confirms a live selfie, and runs it all through a machine
+    learning fraud model &mdash; combined into one clear decision.
+  </p>
+  {% if session.get('auth_user_id') %}
+  <a href="{{ url_for('register') }}" class="submit hero-cta">Start Verification &rarr;</a>
+  {% else %}
+  <a href="{{ url_for('signup') }}" class="submit hero-cta">Create Account &rarr;</a>
+  {% endif %}
+</div>
+
+<div class="stat-strip">
+  <div class="stat-box">
+    <div class="stat-number">{{ total }}</div>
+    <div class="stat-label">Total Verifications Run</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number" style="color:var(--verified)">{{ by_decision.get('Verified', 0) }}</div>
+    <div class="stat-label">Verified</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number" style="color:var(--flagged)">{{ by_decision.get('Flagged for Review', 0) }}</div>
+    <div class="stat-label">Flagged for Review</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number" style="color:var(--rejected)">{{ by_decision.get('Rejected', 0) }}</div>
+    <div class="stat-label">Rejected</div>
+  </div>
+</div>
+
+<div class="how-it-works">
+  <span class="eyebrow">How It Works</span>
+  <div class="steps-row">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <h3>Submit Details</h3>
+      <p>Fill in your profile info and upload a government ID document.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <h3>OTP &amp; Selfie</h3>
+      <p>Verify your email with a one-time code, then capture a live selfie.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <h3>5-Layer Analysis</h3>
+      <p>ID format check, OCR cross-check, online identity scan, ML fraud model, and selfie liveness check all run together.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">04</div>
+      <h3>Instant Decision</h3>
+      <p>Get Verified, Flagged for Review, or Rejected &mdash; with a full reasons breakdown and a QR code.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
